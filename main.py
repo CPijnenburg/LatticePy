@@ -5,6 +5,7 @@ from PhaseVector import PhaseVector
 import h5py as h
 import argparse
 import time
+from distutils.util import strtobool
 
 parser = argparse.ArgumentParser(description='Measures the magnetization in the 2D Ising model')
 parser.add_argument('-w', type=int, help='Lattice size W')
@@ -12,7 +13,7 @@ parser.add_argument('-b', type=float, help='Inverse temperature beta')
 parser.add_argument('-n', type=int, help='Number N of measurements (indefinite by default)')
 parser.add_argument('-e', type=int, default=10, help='Number E of equilibration sweeps')
 parser.add_argument('-m', type=int, default=10, help='Number M of sweeps per measurement')
-parser.add_argument('-r', type=bool, default=True, help='Random start configuration (default is True)')
+parser.add_argument('-r', choices = ['True', 'False'], default = 'True', help='Random start configuration (default is True)')
 parser.add_argument('-o', type=int, default=30, help='Time in seconds between file outputs')
 parser.add_argument('-f', help='Output filename')
 args = parser.parse_args()
@@ -35,7 +36,7 @@ measurement_interval = args.m
 time_between_outputs = args.o
 random_start = args.r
 
-lattice = Lattice(width, random_start)
+lattice = Lattice(width, random = strtobool(random_start), rng = np.random.default_rng())
 for _ in range(equilibration_sweeps):
     lattice.heathbath_update(beta)
 
@@ -59,7 +60,8 @@ with h.File(output_filename, 'a') as f:
 
 average_actions = []
 while True:
-    lattice.heathbath_update(beta)
+    for _ in range(measurement_interval):
+        lattice.heathbath_update(beta)
     average_actions.append(lattice.average_action())
     measurements += 1
 
